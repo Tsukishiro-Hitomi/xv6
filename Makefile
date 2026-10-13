@@ -79,7 +79,7 @@ endif
 
 QEMU = qemu-system-riscv64
 
-CC = $(TOOLPREFIX)gcc
+CC = $(TOOLPREFIX)gcc -march=rv64gc -mabi=lp64d
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
@@ -200,6 +200,7 @@ UPROGS=\
 
 ifeq ($(LAB),syscall)
 UPROGS += \
+	$U/_trace\
 	$U/_attack\
 	$U/_attacktest\
 	$U/_secret
