@@ -160,15 +160,33 @@ printf(char *fmt, ...)
 }
 
 void
+backtrace(void) {
+  uint64 fp = r_fp();
+  uint64 lower_bound = PGROUNDDOWN(fp);
+  uint64 upper_bound = lower_bound + PGSIZE;
+  while (fp >= lower_bound + 16 && fp < upper_bound) {
+    uint64 ra = *(uint64 *)(fp - 8);
+    printf("%p\n", (void *)ra);
+    uint64 old_fp = *(uint64 *)(fp - 16);
+    if (old_fp <= fp) {
+      break;
+    }
+    fp = old_fp;
+  }
+}
+
+void
 panic(char *s)
 {
   pr.locking = 0;
   printf("panic: ");
   printf("%s\n", s);
+  backtrace();
   panicked = 1; // freeze uart output from other CPUs
   for(;;)
     ;
 }
+
 
 void
 printfinit(void)
