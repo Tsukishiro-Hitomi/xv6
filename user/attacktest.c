@@ -84,8 +84,11 @@ main(int argc, char *argv[])
       exit(1);   
     }
     if(pid == 0) {
+      // 关闭管道读端口
       close(fds[0]);
+      // 关闭自己的 fd 2
       close(2);
+      // 让 fd2 指向管道写端口
       dup(fds[1]);
       char *newargv[] = { "attack", 0 };
       exec(newargv[0], newargv);
