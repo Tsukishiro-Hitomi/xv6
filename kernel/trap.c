@@ -36,8 +36,12 @@ trapinithart(void)
 void
 usertrap(void)
 {
+  // 0: 未识别中断
+  // 1: 普通设备中断
+  // 2: 时钟中断
   int which_dev = 0;
 
+  // 检查 trap 是否来自 user mode
   if((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
 
@@ -53,11 +57,13 @@ usertrap(void)
   if(r_scause() == 8){
     // system call
 
+    // 如果进程已经被终止，则不用为其处理 system call
     if(killed(p))
       exit(-1);
 
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
+    // the length of ecall instruction is 4 bytes
     p->trapframe->epc += 4;
 
     // an interrupt will change sepc, scause, and sstatus,
@@ -77,9 +83,21 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
-    yield();
+  if(which_dev == 2) {
+    if (p->alarm_interval > 0 && p->alarm_active == 0) {
+      p->alarm_elapsed += 1;
+      if (p->alarm_elapsed >= p->alarm_interval) {
+        p->alarm_elapsed = 0;
 
+        p->alarm_saved = *p->trapframe;
+        p->alarm_active = 1;
+        p->trapframe->epc = p->alarm_handler;
+      }
+    }
+    yield();
+  }
+
+  // 返回用户态
   usertrapret();
 }
 
