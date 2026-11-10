@@ -146,6 +146,7 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  p->priority = 1;
   return p;
 }
 
@@ -448,16 +449,33 @@ scheduler(void)
   struct cpu *c = mycpu();
 
   c->proc = 0;
+
+  int next = 0;
+
   for(;;){
     // The most recent process to run may have had interrupts
     // turned off; enable them to avoid a deadlock if all
     // processes are waiting.
     intr_on();
 
-    int found = 0;
-    for(p = proc; p < &proc[NPROC]; p++) {
+    int highest = 0;
+    for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE) {
+      if (p->state == RUNNABLE && p->priority > highest) {
+        highest = p->priority;
+      }
+      release(&p->lock);
+    }
+
+    int found = 0;
+    
+    for(int i = 0; i < NPROC; i++) {
+      int index = (next + i) % NPROC;
+      p = &proc[index];
+
+      acquire(&p->lock);
+
+      if(p->state == RUNNABLE && p->priority == highest) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
@@ -469,9 +487,17 @@ scheduler(void)
         // It should have changed its p->state before coming back.
         c->proc = 0;
         found = 1;
+
+        next = (index + 1) % NPROC;
       }
+
       release(&p->lock);
+
+      if (found) {
+        break;
+      }
     }
+
     if(found == 0) {
       // nothing to run; stop running on this core until an interrupt.
       intr_on();
