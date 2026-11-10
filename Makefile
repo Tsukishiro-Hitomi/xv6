@@ -199,6 +199,11 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 
+# Enable after implementing setpri(): make CPUS=1 SCHEDTEST=1 qemu
+ifeq ($(SCHEDTEST),1)
+UPROGS += $U/_setpritest $U/_schedtest
+endif
+
 
 
 
