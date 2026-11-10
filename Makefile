@@ -86,6 +86,7 @@ OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
+CFLAGS += -march=rv64gc
 
 ifdef LAB
 LABUPPER = $(shell echo $(LAB) | tr a-z A-Z)
@@ -134,6 +135,9 @@ $(OBJS): EXTRAFLAG := $(KCSANFLAG)
 
 $K/%.o: $K/%.c
 	$(CC) $(CFLAGS) $(EXTRAFLAG) -c -o $@ $<
+
+$K/%.o: $K/%.S
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 
 $U/initcode: $U/initcode.S
